@@ -1,0 +1,12 @@
+# self-hosted runner
+actions-runner/
+
+# python
+__pycache__/
+*.pyc
+
+# venv
+venv/
+
+# system
+.DS_Store
