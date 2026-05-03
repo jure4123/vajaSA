@@ -34,10 +34,10 @@ jobs:
           fi
 
       - name: Login DockerHub
-        run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+        run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USER }}" --password-stdin
 
       - name: Build image
-        run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/moja-app:latest .
+        run: docker build -t ${{ secrets.DOCKERHUB_USER }}/moja-app:latest .
 
       - name: Push image
-        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/moja-app:latest
+        run: docker push ${{ secrets.DOCKERHUB_USER }}/moja-app:latest
