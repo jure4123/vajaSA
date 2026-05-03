@@ -2,21 +2,25 @@ name: 29931_deploy
 
 on:
   workflow_run:
-    workflows: ["29931_test"]
+    workflows: ["29931_test"]  # sproži se po test workflowu
     types:
       - completed
 
 jobs:
   deploy:
+    # samo če so testi USPEŠNI
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
     runs-on: self-hosted
 
+    # GitHub token za gh CLI (ampak gh auth login NI potreben)
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
       - uses: actions/checkout@v4
 
+      # tukaj rabiš GH CLI na runnerju
       - name: Download artifact iz test workflowa
         run: |
           mkdir artifacts
@@ -24,17 +28,21 @@ jobs:
 
       - name: Preveri napako
         run: |
+          # če file NI prazen → fail
           if [ -s artifacts/napaka.txt ]; then
             echo "Napaka v testih:"
             cat artifacts/napaka.txt
             exit 1
           fi
 
+      # DockerHub login (SECRET-i morajo obstajat!)
       - name: Login DockerHub
         run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USER }}" --password-stdin
 
+      # build Docker image
       - name: Build image
         run: docker build -t ${{ secrets.DOCKERHUB_USER }}/moja-app:latest .
 
+      # push image na DockerHub
       - name: Push image
         run: docker push ${{ secrets.DOCKERHUB_USER }}/moja-app:latest

@@ -2,45 +2,49 @@ name: 29931_test
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main" ]  # workflow se sproži ob pushu na main
 
 jobs:
 
   preveri_test:
-    runs-on: self-hosted
+    runs-on: self-hosted  # uporablja tvoj lokalni runner (ne GitHub-hosted)
 
     outputs:
-      napaka: ${{ steps.preveri.outputs.napaka }}
+      napaka: ${{ steps.preveri.outputs.napaka }}  # posreduje rezultat v naslednji job
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4  # potegne repo na runner
 
       - name: Preveri obstoj testov
         id: preveri
         run: |
+          # preveri ali obstaja testna datoteka
           if [ ! -f test_main.py ]; then
-            echo "TESTI MANJKAJO" > napaka.txt
-            echo "napaka=1" >> $GITHUB_OUTPUT
+            echo "TESTI MANJKAJO" > napaka.txt   # zapis napake v file
+            echo "napaka=1" >> $GITHUB_OUTPUT    # signal za fail
           else
-            echo "" > napaka.txt
+            echo "" > napaka.txt                 # prazna napaka = OK
             echo "napaka=0" >> $GITHUB_OUTPUT
           fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: napaka
-          path: napaka.txt
+          name: napaka      # ime artefakta (kasneje ga downloadas)
+          path: napaka.txt  # file, ki ga pošiljaš med jobi
 
 
   testiranje:
-    needs: preveri_test
+    needs: preveri_test  # ta job se izvede šele po prvem
+
+    # pomembno: testiranje se izvede samo če ni napake
     if: needs.preveri_test.outputs.napaka == '0'
+
     runs-on: self-hosted
 
     strategy:
       matrix:
-        python-version: [3.9, 3.11]
+        python-version: [3.9, 3.11]  # (več verzij testiranja)
 
     steps:
       - uses: actions/checkout@v4
@@ -57,7 +61,7 @@ jobs:
 
       - name: Run tests
         run: |
-          pytest test_main.py 2> napaka.txt
+          pytest test_main.py 2> napaka.txt  # stderr gre v file
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
