@@ -1,72 +1,79 @@
-name: 29931_test
+name: CI - Testiranje
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
 
 jobs:
-  check_tests:
+
+  preveri-teste:
     name: Preveri obstoj testov
     runs-on: self-hosted
 
     steps:
-      - name: Checkout repozitorija
+      - name: Checkout kode
         uses: actions/checkout@v4
 
-      - name: Preveri testne skripte
+      - name: Debug strukture
+        run: ls -la
+
+      - name: Preveri testno mapo
         run: |
-          echo "Preverjam teste..."
-          if ls test*.py 1> /dev/null 2>&1; then
-            echo "Teste najdene."
+          if [ ! -d "tests" ]; then
+            echo "TESTI MANJKAJO" > napaka.txt
           else
-            echo "TESTI MANJKAJO!" | tee napaka.txt
-            exit 1
+            echo "OK" > napaka.txt
           fi
 
-      - name: Shrani napako kot artefakt
-        if: always()
+          cat napaka.txt
+
+      - name: Upload artifact napaka
         uses: actions/upload-artifact@v4
         with:
           name: napaka
           path: napaka.txt
 
-  run_tests:
+
+  testiranje:
     name: Zagon testov
     runs-on: self-hosted
-    needs: check_tests
-    if: success()
+    needs: preveri-teste
 
     strategy:
       matrix:
         python-version: [3.9, 3.10]
 
     steps:
-      - name: Checkout
+      - name: Checkout kode
         uses: actions/checkout@v4
 
-      - name: Prenesi artefakt
+      - name: Download artifact
         uses: actions/download-artifact@v4
         with:
           name: napaka
 
-      - name: Preveri napaka.txt
+      - name: Debug artifact
         run: |
-          if [ -s napaka.txt ]; then
-            echo "Napaka obstaja - prekinjam."
+          ls -la
+          cat napaka.txt
+
+      - name: Preveri napako
+        run: |
+          if grep -q "TESTI MANJKAJO" napaka.txt; then
+            echo "CI FAIL - testi manjkajo"
             exit 1
-          else
-            echo "Ni napak, nadaljujem..."
           fi
 
-      - name: Nastavi Python ${{ matrix.python-version }}
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Namesti odvisnosti
+      - name: Install dependencies
         run: |
           pip install -r requirements.txt
 
-      - name: Zaženi teste
+      - name: Run tests
         run: |
-          python -m pytest -v
+          pytest -v
