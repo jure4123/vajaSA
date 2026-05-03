@@ -1,79 +1,42 @@
-name: CI - Testiranje
+name: 29931_test
 
 on:
   push:
-    branches:
-      - main
+    branches: [ "main" ]
 
 jobs:
-
-  preveri-teste:
-    name: Preveri obstoj testov
-    runs-on: self-hosted
-
-    steps:
-      - name: Checkout kode
-        uses: actions/checkout@v4
-
-      - name: Debug strukture
-        run: ls -la
-
-      - name: Preveri testno mapo
-        run: |
-          if [ ! -d "tests" ]; then
-            echo "TESTI MANJKAJO" > napaka.txt
-          else
-            echo "OK" > napaka.txt
-          fi
-
-          cat napaka.txt
-
-      - name: Upload artifact napaka
-        uses: actions/upload-artifact@v4
-        with:
-          name: napaka
-          path: napaka.txt
-
-
   testiranje:
-    name: Zagon testov
     runs-on: self-hosted
-    needs: preveri-teste
-
-    strategy:
-      matrix:
-        python-version: [3.9, 3.10]
 
     steps:
       - name: Checkout kode
         uses: actions/checkout@v4
-
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: napaka
-
-      - name: Debug artifact
-        run: |
-          ls -la
-          cat napaka.txt
-
-      - name: Preveri napako
-        run: |
-          if grep -q "TESTI MANJKAJO" napaka.txt; then
-            echo "CI FAIL - testi manjkajo"
-            exit 1
-          fi
 
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.10"
 
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
+          pip install pytest
+
+      - name: Preveri obstoj testov
+        run: |
+          if [ ! -f test_main.py ]; then
+            echo "TESTI MANJKAJO" > napaka.txt
+            exit 1
+          else
+            echo "" > napaka.txt
+          fi
 
       - name: Run tests
         run: |
-          pytest -v
+          pytest test_main.py 2> napaka.txt
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: napaka
+          path: napaka.txt
