@@ -59,8 +59,8 @@ jobs:
           pip install -r requirements.txt
           pip install pytest
        
-       -name: Izpis
-          run: |
+      - name: Izpis
+        run: |
           echo "lalala"
 
 
